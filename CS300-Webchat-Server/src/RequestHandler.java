@@ -1,3 +1,14 @@
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -8,36 +19,118 @@ import java.util.StringTokenizer;
 public class RequestHandler {
 
 	private Queue<RequestNode> requestQueue = new LinkedList<RequestNode>();
+	private boolean loggedIn = false;
+	private String clientUsername = "";
 	
 	public RequestHandler(){
 		
 	}
 	
-	public void processNextRequest(){
+	public String processNextRequest(){
 		RequestNode currentRequest = getNext();
+		String requestResult = "";
 		if(currentRequest == null)
-			return;
+			return "REQUEST WAS NULL";
+
+		String username = "";
+		String target = "";
+		String password = "";  
+		String timestamp = "";
+		String message = "";
+		
+		boolean validInput = false;
 		
 		switch(currentRequest.getRequestCode()){
 			case 1:
 				// New account
+
+				username = (String) currentRequest.getRequestData().get(0);
+				password = (String) currentRequest.getRequestData().get(1);
+				
+				// Check that input is valid
+				// TODO
+				validInput = true;
+				
+				if(validInput){
+					loggedIn = true;
+					clientUsername = username;
+				}else{
+					loggedIn = false;
+				}
+				
+				requestResult = "CREATED NEW ACCOUNT";
+				
+				// Write to accounts file
+				writeToFile(username + ";" + password, "accounts.txt");
 				break;
 			case 2:
 				// Login
+
+				username = (String) currentRequest.getRequestData().get(0);
+				password = (String) currentRequest.getRequestData().get(1);
+				
+				// Check that input is valid
+				// TODO
+				validInput = true;
+				
+				if(validInput){
+					loggedIn = true;
+					clientUsername = username;
+				}else{
+					loggedIn = false;
+				}
+				
+				// Check that the password matches the username
+				String valid = verifyPassword(username, password);
+				
+				if(valid.equals("ACCEPT")){
+					loggedIn = true;
+					
+					requestResult = "LOGGED IN";
+				}else{
+					requestResult = "LOGIN FAILED";
+				}
+				
+				System.out.println(valid);
+				
+				// Return an accept or reject to the client
+				// TODO
+				
 				break;
 			case 3:
 				// Message
+				
+				username = (String) currentRequest.getRequestData().get(0);
+				target = (String) currentRequest.getRequestData().get(1);
+				timestamp = (String) currentRequest.getRequestData().get(2);
+				message = (String) currentRequest.getRequestData().get(3);
+				
+				//requestResult = sendMessage(username, target, timestamp, message);
+				
+				// Store the message to a file
+				writeToFile(timestamp + message, "logs/" + username + "-" + target + ".txt");
 				break;
 			case 4:
 				// Retrieve Logs
+				username = (String) currentRequest.getRequestData().get(0);
+				target = (String) currentRequest.getRequestData().get(1);
+				
+				// Return a link to the log file to the client program
+				// TODO
+				
+				requestResult = "LOG FILE LINK:";
+				
 				break;
 			case 5:
 				// Ping to confirm online
+				
+				requestResult = "PING SUCCESSFUL";
+				
 				break;
 		}
+		
+		return requestResult;
 	}
-	
-
 	
 	public void createNewRequest(InetAddress url, String requestCode, String data){
 		System.out.println("URL:" + url.toString());
@@ -92,7 +185,123 @@ public class RequestHandler {
 		
 		requestQueue.add(node);
 	}
+
+	// Write data to a file
+	private static void writeToFile(String data, String filename){
+		try(
+				FileWriter fileWriter = new FileWriter(filename, true);
+				BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+				PrintWriter out = new PrintWriter(bufferedWriter);
+				){
+			
+			System.out.println("Writing " + data + " to file " + filename);
+			
+			// Write to file here.
+			out.println(data);
+			
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
+	// Check if the password matches the username
+	private String verifyPassword(String username, String password){
+		BufferedReader bufferedReader = null;
+		boolean usernameFound = false;
+		boolean validPassword = false;
+			
+		try {
+			FileReader fileReader = new FileReader("accounts.txt");
+			bufferedReader = new BufferedReader(fileReader);
+			
+			String line = "";
+			while((line = bufferedReader.readLine()) != null){
+				
+				// If the username exists, return true
+				
+				String name = line.substring(0, line.indexOf(';'));
+				String pass = line.substring(line.indexOf(';') + 1, line.length());
+				
+				System.out.println("name=" + name + " pass=" + pass);
+				
+				if(name.equals(username)){
+					usernameFound = true;
+					if(pass.equals(password)){
+						validPassword = true;
+					}	
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}finally{
+		    try {
+		    	bufferedReader.close();
+		    } catch (IOException e) {
+		        e.printStackTrace();
+		    }
+		}
+		
+		// Process return
+		if(usernameFound){
+			if(validPassword){
+				return "ACCEPT";
+			}else{
+				return "WRONG PASSWORD!";
+			}
+		}else{
+			return "USERNAME NOT FOUND!";
+		}
+	}
+	
+	// Check if the username is within the accounts.txt file
+	private boolean checkIfUsernameExists(String username){
+		BufferedReader bufferedReader = null;
+		
+		try {
+			FileReader fileReader = new FileReader("accounts.txt");
+			bufferedReader = new BufferedReader(fileReader);
+			
+			String line = "";
+			while((line = bufferedReader.readLine()) != null){
+				
+				// If the username exists, return true
+				
+				String name = line.substring(0, line.indexOf(';'));
+				
+				if(name.equals(username))
+					return true;
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}finally{
+		    try {
+		    	bufferedReader.close();
+		    } catch (IOException e) {
+		        e.printStackTrace();
+		    }
+		}
+		
+		return false;
+	}
+	
+	public boolean checkLoggedIn(){
+		return loggedIn;
+	}
+	
+	public String getClientUsername(){
+		return clientUsername;
+	}
+	
+	// Get the next node from the queue
 	public RequestNode getNext(){
 		return requestQueue.poll();
 	}

@@ -24,8 +24,8 @@ import java.net.InetAddress;
 
 public class MainServer {
 	
-	ArrayList<OnlineNode> onlineList = new ArrayList<OnlineNode>();
-	ArrayList<OnlineNode> onlineListNew = new ArrayList<OnlineNode>();
+	private static ArrayList<OnlineNode> onlineList = new ArrayList<OnlineNode>();
+	private static ArrayList<OnlineNode> onlineListNew = new ArrayList<OnlineNode>();
 	
 	private static int port = 60010;
 	
@@ -35,7 +35,6 @@ public class MainServer {
 		//runTests();
 	
 		receiveNewRequests();
-		processRequestQueue();
 		
 		requestHandler.printQueue();
 		System.out.println("Done");
@@ -52,29 +51,15 @@ public class MainServer {
 		return null;
 	}
 	
-	private static void writeToFile(String data, String filename){
-		try(
-				Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), "utf-8"))
-				){
-			
-			// Write to file here.
-			
-			
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
 	// Add new requests to the reqest handler object
 	private static void receiveNewRequests(){
+		// ***************
+		// ***************
+		// ***************
 		// When a new request is received, create a new thread for it
+		// ***************
+		// ***************
+		// ***************
 		try(
 				ServerSocket serverSocket = new ServerSocket(port);
 				Socket clientSocket = serverSocket.accept();
@@ -85,6 +70,9 @@ public class MainServer {
 			
 			outputLine = "Connection recieved!";
 			output.println(outputLine);
+			
+			// Weather of not the user client has logged in
+			boolean loggedIn = false;
 			
 			while(null != (inputLine = input.readLine())){
 				
@@ -102,8 +90,18 @@ public class MainServer {
 				String requestCode = inputLine.substring(0, 1);  // Request code is the first character in the input			
 				String data = inputLine.substring(1);            // Data is everything after the request code
 				
+				
 				// Add the request to the request handler
 				requestHandler.createNewRequest(url, requestCode, data);
+				requestHandler.processNextRequest();
+
+				if(!loggedIn){
+					loggedIn = requestHandler.checkLoggedIn();
+					
+					if(loggedIn){
+						onlineList.add(new OnlineNode(url, requestHandler.getClientUsername(), output));
+					}
+				}
 			}
 			
 			System.out.println("Done reading input from client.");
@@ -111,10 +109,6 @@ public class MainServer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-	
-	private static void processRequestQueue(){
-		
 	}
 	
 	private static void runTests(){
