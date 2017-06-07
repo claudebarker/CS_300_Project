@@ -19,6 +19,7 @@ import java.util.StringTokenizer;
 public class RequestHandler {
 
 	private Queue<RequestNode> requestQueue = new LinkedList<RequestNode>();
+	private ArrayList<OnlineNode> onlineList = new ArrayList<OnlineNode>();
 	private boolean loggedIn = false;
 	private String clientUsername = "";
 	
@@ -74,27 +75,17 @@ public class RequestHandler {
 				validInput = true;
 				
 				if(validInput){
-					loggedIn = true;
 					clientUsername = username;
-				}else{
-					loggedIn = false;
 				}
 				
 				// Check that the password matches the username
-				String valid = verifyPassword(username, password);
+				requestResult = verifyPassword(username, password);
 				
-				if(valid.equals("ACCEPT")){
+				if(requestResult.equals("CORRECT PASSWORD")){
 					loggedIn = true;
-					
-					requestResult = "LOGGED IN";
 				}else{
-					requestResult = "LOGIN FAILED";
+					loggedIn = false;
 				}
-				
-				System.out.println(valid);
-				
-				// Return an accept or reject to the client
-				// TODO
 				
 				break;
 			case 3:
@@ -105,10 +96,14 @@ public class RequestHandler {
 				timestamp = (String) currentRequest.getRequestData().get(2);
 				message = (String) currentRequest.getRequestData().get(3);
 				
-				//requestResult = sendMessage(username, target, timestamp, message);
+				requestResult = sendMessage(username, target, timestamp, message);
 				
 				// Store the message to a file
-				writeToFile(timestamp + message, "logs/" + username + "-" + target + ".txt");
+				if(target.equals("ALL USERS")){
+					writeToFile(timestamp + message, "logs/" + "_ALL_USERS.txt");
+				}else{
+					writeToFile(timestamp + message, "logs/" + username + "-" + target + ".txt");
+				}
 				break;
 			case 4:
 				// Retrieve Logs
@@ -229,7 +224,7 @@ public class RequestHandler {
 				String name = line.substring(0, line.indexOf(';'));
 				String pass = line.substring(line.indexOf(';') + 1, line.length());
 				
-				System.out.println("name=" + name + " pass=" + pass);
+				//System.out.println("name=" + name + " pass=" + pass);
 				
 				if(name.equals(username)){
 					usernameFound = true;
@@ -252,13 +247,38 @@ public class RequestHandler {
 		// Process return
 		if(usernameFound){
 			if(validPassword){
-				return "ACCEPT";
+				return "CORRECT PASSWORD";
 			}else{
 				return "WRONG PASSWORD!";
 			}
 		}else{
 			return "USERNAME NOT FOUND!";
 		}
+	}
+	
+	public void setOnlineList(ArrayList<OnlineNode> onlineList){
+		this.onlineList = onlineList;
+	}
+	
+	private String sendMessage(String username, String target, String timestamp, String message){
+		
+		String result = "";
+		PrintWriter output = null;
+		for(int i = 0; i < onlineList.size(); ++i){
+			if(onlineList.get(i).getUsername().equals(target)){
+				output = onlineList.get(i).getOutput();
+				break;
+			}
+		}
+		
+		if(output != null){
+			output.println("INCOMING MESSAGE:" + username + ";" + timestamp + ";" + message);
+			result = "MESSAGE SENT";
+		}else{
+			result = "MESSAGE FAILED TO SEND";
+		}
+		
+		return result;
 	}
 	
 	// Check if the username is within the accounts.txt file
