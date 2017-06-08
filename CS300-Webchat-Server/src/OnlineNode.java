@@ -15,6 +15,7 @@ public class OnlineNode {
 	public OnlineNode(InetAddress ip, String username, PrintWriter output){
 		this.ip = ip;
 		this.username = username;
+		this.output = output;
 	}
 
 	public InetAddress getIp() {
@@ -55,7 +56,7 @@ public class OnlineNode {
 
 	@Override
 	public String toString() {
-		return "OnlineNode [ip=" + ip + ", username=" + username + "]";
+		return "OnlineNode [ip=" + ip + ", username=" + username + " output=" + output.toString() + "]";
 	}
 	
 	

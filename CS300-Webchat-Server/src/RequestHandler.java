@@ -260,22 +260,41 @@ public class RequestHandler {
 		this.onlineList = onlineList;
 	}
 	
-	private String sendMessage(String username, String target, String timestamp, String message){
-		
+	private String sendMessage(String username, String target, String timestamp, String message){		
 		String result = "";
 		PrintWriter output = null;
-		for(int i = 0; i < onlineList.size(); ++i){
-			if(onlineList.get(i).getUsername().equals(target)){
-				output = onlineList.get(i).getOutput();
-				break;
-			}
-		}
 		
-		if(output != null){
-			output.println("INCOMING MESSAGE:" + username + ";" + timestamp + ";" + message);
+		System.out.println(onlineList.toString());
+		
+		if(target.equals("ALL USERS")){
+			
+			// Send the message to all online users
+			for(int i = 0; i < onlineList.size(); ++i){
+				output = onlineList.get(i).getOutput();
+				
+				// Output is null for some reason...
+				
+				if(output != null){
+					output.println("INCOMING MESSAGE:" + username + ";" + timestamp + ";" + message);
+				}
+			}
+			
 			result = "MESSAGE SENT";
 		}else{
-			result = "MESSAGE FAILED TO SEND";
+			// Send the message to a specific online user
+			for(int i = 0; i < onlineList.size(); ++i){
+				if(onlineList.get(i).getUsername().equals(target)){
+					output = onlineList.get(i).getOutput();
+					break;
+				}
+			}
+			
+			if(output != null){
+				output.println("INCOMING MESSAGE:" + username + ";" + timestamp + ";" + message);
+				result = "MESSAGE SENT";
+			}else{
+				result = "MESSAGE FAILED TO SEND";
+			}
 		}
 		
 		return result;

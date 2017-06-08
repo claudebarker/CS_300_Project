@@ -26,7 +26,6 @@ public class MainClient {
 	public JFrame frmJavaChatApp;
 	
 	Client client;
-	Thread clientThread;
 	
 	public String hostName = "localhost";
 	public int port = 60010;
@@ -65,8 +64,7 @@ public class MainClient {
 		initialize();
 		
 		client = new Client(this);
-		clientThread = new Thread(client);
-		clientThread.start();
+		new Thread(client).start();
 	}
 
 	/**

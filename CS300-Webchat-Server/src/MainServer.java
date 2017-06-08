@@ -24,17 +24,34 @@ import java.net.InetAddress;
 
 public class MainServer {
 	
-	private static ArrayList<OnlineNode> onlineList = new ArrayList<OnlineNode>();
-	private static ArrayList<OnlineNode> onlineListNew = new ArrayList<OnlineNode>();
-	
+	public static OnlineHandler onlineHandler;
 	public static int port = 60010;
 	
-	private static RequestHandler requestHandler = new RequestHandler();
-	
 	public static void main(String[] args) {
-		
-		receiveNewRequests();
-		
+		onlineHandler = new OnlineHandler();
+		receiveNewClients();
+	}
+	
+	private static void receiveNewClients(){
+		ServerSocket serverSocket = null;
+		try{
+			serverSocket = new ServerSocket(port);
+			System.out.println("Server socket created on port: " + port);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+			
+		while(true){
+			try{
+				Socket clientSocket = serverSocket.accept();
+				System.out.println("Client connected. Creating thread for Server...");
+				
+				// Create a new thread to handle the new connection to the server.
+				new Thread(new Server(onlineHandler, clientSocket)).start();
+			} catch (IOException e){
+				e.printStackTrace();
+			}
+		}	
 	}
 	
 	private List<String> readFromFile(String filename){
@@ -46,74 +63,6 @@ public class MainServer {
 			e.printStackTrace();
 		}
 		return null;
-	}
-	
-	// Add new requests to the request handler object
-	private static void receiveNewRequests(){
-		// ***************
-		// ***************
-		// ***************
-		// When a new request is received, create a new thread for it
-		// ***************
-		// ***************
-		// ***************
-		try(
-			ServerSocket serverSocket = new ServerSocket(port);
-			Socket clientSocket = serverSocket.accept();
-			PrintWriter output = new PrintWriter(clientSocket.getOutputStream(), true);
-			BufferedReader input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-			){
-			
-			String inputLine, outputLine;
-			
-			outputLine = "Connection recieved!";
-			output.println(outputLine);
-			
-			// Weather of not the user client has logged in
-			boolean loggedIn = false;
-			
-			while(null != (inputLine = input.readLine())){
-				
-				// Skip empty input
-				if(inputLine.equals("")){
-					continue;
-				}
-				
-				System.out.println("Message from client: " + inputLine);
-				
-				InetAddress url = clientSocket.getInetAddress(); // Get the URL from the client
-				String requestCode = inputLine.substring(0, 1);  // Request code is the first character in the input			
-				String data = inputLine.substring(1);            // Data is everything after the request code
-
-				// Pass the onlineList to the request handler
-				requestHandler.setOnlineList(onlineList);
-
-				// Add the request to the request handler
-				System.out.println("Creating request...");
-				requestHandler.createNewRequest(url, requestCode, data);
-
-				System.out.println("Processing request...");
-				String result = requestHandler.processNextRequest();
-
-				System.out.println("result: " + result);
-				output.println(result);
-				
-				if(!loggedIn){
-					loggedIn = requestHandler.checkLoggedIn();
-					
-					if(loggedIn){
-						onlineList.add(new OnlineNode(url, requestHandler.getClientUsername(), output));
-					}
-				}
-				
-				System.out.println();
-			}
-			
-			System.out.println("Done reading input from client.");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 	
 	private static void runTests(){

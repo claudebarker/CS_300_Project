@@ -38,7 +38,16 @@ public class Client implements Runnable{
 					
 					if(loggedIn){
 						
+						// Check if we are dealing with an incoming message
+						if(fromServer.contains(":")){
+							String code = fromServer.substring(0, fromServer.indexOf(':'));
+							if(code.equals("INCOMING MESSAGE")){
+								appendMessageToChatWindow(fromServer);
+							}
+						}
+						
 					}else{
+						
 						if(fromServer.equals("CORRECT PASSWORD") || fromServer.equals("CREATED NEW ACCOUNT")){
 							loggedIn = true;
 
@@ -63,6 +72,11 @@ public class Client implements Runnable{
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	private void appendMessageToChatWindow(String fromServer){
+		String message = fromServer.substring(fromServer.indexOf(':') + 1, fromServer.length());
+		mainClient.mainPanel.chatBox.append(message + '\n');
 	}
 
 	public void sendRequest(String request){
