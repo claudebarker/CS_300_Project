@@ -7,9 +7,7 @@ public class PanelHandler {
 		this.mainClient = mainClient;
 	}
 	
-	public void changeToMainPanel(){
-		mainClient.username = mainClient.loginPanel.usernameField.getText();
-		
+	public void changeToMainPanel(){		
 		mainClient.loginPanel.setVisible(false);
 		mainClient.signupPanel.setVisible(false);
 		mainClient.mainPanel.setVisible(true);

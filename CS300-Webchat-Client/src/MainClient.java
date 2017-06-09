@@ -1,32 +1,17 @@
 import java.awt.EventQueue;
 
 import javax.swing.JFrame;
-import javax.swing.JTextArea;
-import javax.swing.JList;
-import javax.swing.JButton;
-import javax.swing.Action;
-import javax.swing.GroupLayout;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import java.awt.event.ActionListener;
-import java.awt.event.InputMethodEvent;
-import java.awt.event.InputMethodListener;
 import java.awt.event.ActionEvent;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
 import java.net.UnknownHostException;
 import java.text.DateFormat;
 import java.util.Date;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import javax.swing.JPanel;
-import java.awt.FlowLayout;
 
 public class MainClient {
 	
@@ -37,7 +22,7 @@ public class MainClient {
 	public String hostName = "localhost";
 	public int port = 60010;
 	
-	public String username = null;
+	public static String username = null;
 	public String currentChat = "ALL USERS";
 	public String requestToSend = null;
 	
@@ -83,7 +68,7 @@ public class MainClient {
 		signupPanel = new SignupPanel();
 		connectToServerPanel = new ConnectToServerPanel();
 		
-		frmJavaChatApp.add(connectToServerPanel);
+		frmJavaChatApp.getContentPane().add(connectToServerPanel);
 
 		// *****************
 		// ConnectToServerPanel
@@ -185,28 +170,43 @@ public class MainClient {
 			
 			panelHandler.changeToLoginPanel();
 		} catch (UnknownHostException e) {
+			connectToServerPanel.errorLabel.setText("Error: Unknown host!");
 			e.printStackTrace();
 		} catch (IOException e) {
+			connectToServerPanel.errorLabel.setText("Error: IO exception! The connection was refused!");
 			e.printStackTrace();
 		}
 	}
 	
 	private void sendSignupRequest(String usernameField, String passwordField){
-		if(!usernameField.equals("") & !passwordField.equals("")){
+		if(!usernameField.equals("") && !passwordField.equals("")){
+			
+			System.out.println("SENDING SIGNUP REQUEST!");
+			
 			requestToSend = "1" + usernameField + ";" + passwordField;
 			client.sendRequest(requestToSend);
+			username = usernameField;
 		}
 	}
 	
 	private void sendLoginRequest(String usernameField, String passwordField){
-		if(!usernameField.equals("") & !passwordField.equals("")){
+		if(!usernameField.equals("") && !passwordField.equals("")){
+			
+			System.out.println("SENDING LOGIN REQUEST!");
+			
 			requestToSend = "2" + usernameField + ";" + passwordField;
 			client.sendRequest(requestToSend);
+			username = usernameField;
 		}
 	}
 
 	private void sendCurrentMessage(String messageText){
 		if(!messageText.equals("")){
+			
+			if(messageText.charAt(messageText.length() - 1) == '\n'){
+				messageText = messageText.substring(0, messageText.length() - 1);
+			}
+			
 			requestToSend = "3" + username + ";" + currentChat + ";" + getTimestamp() + ";" + messageText;
 			client.sendRequest(requestToSend);
 			

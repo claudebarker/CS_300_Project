@@ -52,9 +52,9 @@ public class ConnectToServerPanel extends JPanel {
 							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
 								.addComponent(lblPort)
 								.addComponent(portField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
-						.addComponent(connectButton)
-						.addComponent(errorLabel))
-					.addContainerGap(274, Short.MAX_VALUE))
+						.addComponent(errorLabel)
+						.addComponent(connectButton))
+					.addContainerGap(315, Short.MAX_VALUE))
 		);
 		groupLayout.setVerticalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
@@ -73,7 +73,7 @@ public class ConnectToServerPanel extends JPanel {
 					.addComponent(connectButton)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(errorLabel)
-					.addContainerGap(354, Short.MAX_VALUE))
+					.addContainerGap(412, Short.MAX_VALUE))
 		);
 		setLayout(groupLayout);
 

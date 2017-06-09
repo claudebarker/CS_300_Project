@@ -28,8 +28,10 @@ public class RequestHandler {
 	private boolean loggedIn = false;
 	private String clientUsername = "";
 	
+	InputValidator inputValidator = null;
+	
 	public RequestHandler(){
-		
+		inputValidator = new InputValidator();
 	}
 	
 	public String processNextRequest(){
@@ -55,17 +57,18 @@ public class RequestHandler {
 				password = (String) currentRequest.getRequestData().get(1);
 				
 				// Check that input is valid
-				// TODO
-				validInput = true;
+				validInput = inputValidator.validateUsername(username) && inputValidator.validatePassword(password);
 				
 				if(validInput){
 					loggedIn = true;
 					clientUsername = username;
+					
+					requestResult = "CREATED NEW ACCOUNT";
 				}else{
 					loggedIn = false;
+					
+					requestResult = "ERROR: REQUIREMENTS: USERNAME: A-Z0-9    PASSWORD: A-Z0-9!_.-+";
 				}
-				
-				requestResult = "CREATED NEW ACCOUNT";
 				
 				// Write to accounts file
 				writeToFile(username + ";" + password, "accounts.txt");
@@ -292,10 +295,10 @@ public class RequestHandler {
 			if(validPassword){
 				return "CORRECT PASSWORD";
 			}else{
-				return "WRONG PASSWORD!";
+				return "ERROR: WRONG PASSWORD!";
 			}
 		}else{
-			return "USERNAME NOT FOUND!";
+			return "ERROR: USERNAME NOT FOUND!";
 		}
 	}
 	
