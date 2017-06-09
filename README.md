@@ -1,6 +1,6 @@
 # CS_300_Project
 
-I have copied and pasted the contents of barker_usage_instructinos.doc here for easy access.
+I have copied and pasted the contents of barker_usage_instructions.doc here for easy access.
 
 ## Required Files:
 
