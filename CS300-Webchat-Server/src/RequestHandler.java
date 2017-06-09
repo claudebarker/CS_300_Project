@@ -5,14 +5,19 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.StringTokenizer;
 
@@ -30,6 +35,7 @@ public class RequestHandler {
 	public String processNextRequest(){
 		RequestNode currentRequest = getNext();
 		String requestResult = "";
+		
 		if(currentRequest == null)
 			return "REQUEST WAS NULL";
 
@@ -100,9 +106,9 @@ public class RequestHandler {
 				
 				// Store the message to a file
 				if(target.equals("ALL USERS")){
-					writeToFile(timestamp + message, "logs/" + "_ALL_USERS.txt");
+					writeToFile(username + " - " + timestamp + ":" + message, "logs/" + "_ALL_USERS.txt");
 				}else{
-					writeToFile(timestamp + message, "logs/" + username + "-" + target + ".txt");
+					writeToFile(username + " - " + timestamp + ":" + message, "logs/" + username + "-" + target + ".txt");
 				}
 				break;
 			case 4:
@@ -110,16 +116,21 @@ public class RequestHandler {
 				username = (String) currentRequest.getRequestData().get(0);
 				target = (String) currentRequest.getRequestData().get(1);
 				
-				// Return a link to the log file to the client program
-				// TODO
-				
-				requestResult = "LOG FILE LINK:";
+				if(target.contains("ALL USERS")){
+					requestResult = "LOG FILE:" + "logs/" +  "_ALL_USERS.txt";
+				}else{
+					requestResult = "LOG FILE:" + "logs/" + username + "-" + target + ".txt";
+				}
 				
 				break;
 			case 5:
 				// Ping to confirm online
 				
 				requestResult = "PING SUCCESSFUL";
+				
+				break;
+			default:
+				requestResult = "ERROR: Invalid request code!";
 				
 				break;
 		}
@@ -132,7 +143,15 @@ public class RequestHandler {
 		System.out.println("Request code:" + requestCode);
 		System.out.println("Data:" + data);
 		
-		int code = Integer.parseInt(requestCode);
+		int code = 0;
+		
+		try{
+			code = Integer.parseInt(requestCode);
+		}catch (NumberFormatException e){
+			e.printStackTrace();
+			return;
+		}
+		
 		ArrayList<Object> dataArray = new ArrayList<Object>();
 		
 		// Use ; for the delimiter. Messages may contain simicolons though
@@ -141,34 +160,58 @@ public class RequestHandler {
 		switch(code){
 			case 1:
 				// New account
-				dataArray.add(new String(tokenizer.nextToken())); // Username
-				dataArray.add(new String(tokenizer.nextToken())); // Password
+				if(tokenizer.countTokens() == 2){
+					dataArray.add(new String(tokenizer.nextToken())); // Username
+					dataArray.add(new String(tokenizer.nextToken())); // Password
+				}else{
+					System.err.println("Error with request data!");
+					return;
+				}
 				
 				break;
 			case 2:
 				// Login
-				dataArray.add(new String(tokenizer.nextToken())); // Username
-				dataArray.add(new String(tokenizer.nextToken())); // Password
+				if(tokenizer.countTokens() == 2){
+					dataArray.add(new String(tokenizer.nextToken())); // Username
+					dataArray.add(new String(tokenizer.nextToken())); // Password
+				}else{
+					System.err.println("Error with request data!");
+					return;
+				}
+				
 				break;
 			case 3:
 				// Message
-				dataArray.add(new String(tokenizer.nextToken())); // Sender Username
-				dataArray.add(new String(tokenizer.nextToken())); // Target Username
-				dataArray.add(new String(tokenizer.nextToken())); // Timestamp
 
-				// Since messages may contain simi-colons, I have to add in the ; when one is encountered
-				String message = "";
-				message = message + tokenizer.nextToken();
-				while(tokenizer.hasMoreTokens()){
-					message = message + ";" + tokenizer.nextToken();
+				if(tokenizer.countTokens() > 3){
+					dataArray.add(new String(tokenizer.nextToken())); // Sender Username
+					dataArray.add(new String(tokenizer.nextToken())); // Target Username
+					dataArray.add(new String(tokenizer.nextToken())); // Timestamp
+	
+					// Since messages may contain simi-colons, I have to add in the ; when one is encountered
+					String message = "";
+					message = message + tokenizer.nextToken();
+					while(tokenizer.hasMoreTokens()){
+						message = message + ";" + tokenizer.nextToken();
+					}
+					dataArray.add(message); // Message Text
+				}else{
+					System.err.println("Error with request data!");
+					return;
 				}
-				dataArray.add(message); // Message Text
 				
 				break;
 			case 4:
 				// Retrieve Logs
-				dataArray.add(new String(tokenizer.nextToken())); // Sender Username
-				dataArray.add(new String(tokenizer.nextToken())); // Target Username
+				
+				if(tokenizer.countTokens() == 2){
+					dataArray.add(new String(tokenizer.nextToken())); // Sender Username
+					dataArray.add(new String(tokenizer.nextToken())); // Target Username
+				}else{
+					System.err.println("Error with request data!");
+					return;
+				}
+				
 				break;
 			case 5:
 				// Ping to confirm online
@@ -262,26 +305,33 @@ public class RequestHandler {
 	
 	private String sendMessage(String username, String target, String timestamp, String message){		
 		String result = "";
-		PrintWriter output = null;
+		ObjectOutputStream output = null;
 		
 		System.out.println(onlineList.toString());
 		
 		if(target.equals("ALL USERS")){
 			
 			// Send the message to all online users
+			
 			for(int i = 0; i < onlineList.size(); ++i){
 				output = onlineList.get(i).getOutput();
 				
-				// Output is null for some reason...
-				
 				if(output != null){
-					output.println("INCOMING MESSAGE:" + username + ";" + timestamp + ";" + message);
+					try {
+						output.writeObject("INCOMING MESSAGE:" + username + " -> " + target + " : " + timestamp + ": " + message);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 			}
 			
 			result = "MESSAGE SENT";
+			
 		}else{
+			
 			// Send the message to a specific online user
+			
 			for(int i = 0; i < onlineList.size(); ++i){
 				if(onlineList.get(i).getUsername().equals(target)){
 					output = onlineList.get(i).getOutput();
@@ -290,7 +340,12 @@ public class RequestHandler {
 			}
 			
 			if(output != null){
-				output.println("INCOMING MESSAGE:" + username + ";" + timestamp + ";" + message);
+				try {
+					output.writeObject("INCOMING MESSAGE:" + username + " -> " + target + " : " + timestamp + ": " + message);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				result = "MESSAGE SENT";
 			}else{
 				result = "MESSAGE FAILED TO SEND";

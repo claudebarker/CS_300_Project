@@ -6,6 +6,11 @@ import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.LayoutStyle.ComponentPlacement;
+import java.awt.event.InputMethodListener;
+import java.awt.event.InputMethodEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.JScrollPane;
 
 public class MainPanel extends JPanel {
 
@@ -13,6 +18,10 @@ public class MainPanel extends JPanel {
 	public JList usersList = new JList();
 	public JButton sendButton = new JButton("Send");
 	public JTextArea chatBox = new JTextArea();
+	public JButton getLogFilebtn = new JButton("Get log file");
+	public final JScrollPane chatScrollPane = new JScrollPane();
+	private final JScrollPane scrollPane_1 = new JScrollPane();
+	private final JScrollPane scrollPane_2 = new JScrollPane();
 	
 	/**
 	 * Create the panel.
@@ -22,33 +31,42 @@ public class MainPanel extends JPanel {
 		gl_mainViewPanel.setHorizontalGroup(
 			gl_mainViewPanel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_mainViewPanel.createSequentialGroup()
-					.addGap(7)
-					.addComponent(usersList, GroupLayout.PREFERRED_SIZE, 152, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addContainerGap()
+					.addComponent(scrollPane_2, GroupLayout.PREFERRED_SIZE, 153, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED)
 					.addGroup(gl_mainViewPanel.createParallelGroup(Alignment.LEADING)
 						.addGroup(gl_mainViewPanel.createSequentialGroup()
-							.addComponent(messageBox, GroupLayout.DEFAULT_SIZE, 337, Short.MAX_VALUE)
-							.addPreferredGap(ComponentPlacement.UNRELATED)
-							.addComponent(sendButton, GroupLayout.PREFERRED_SIZE, 96, GroupLayout.PREFERRED_SIZE))
-						.addComponent(chatBox, GroupLayout.DEFAULT_SIZE, 443, Short.MAX_VALUE))
+							.addComponent(scrollPane_1, GroupLayout.PREFERRED_SIZE, 334, GroupLayout.PREFERRED_SIZE)
+							.addPreferredGap(ComponentPlacement.RELATED)
+							.addGroup(gl_mainViewPanel.createParallelGroup(Alignment.LEADING)
+								.addComponent(sendButton, GroupLayout.DEFAULT_SIZE, 103, Short.MAX_VALUE)
+								.addComponent(getLogFilebtn, GroupLayout.DEFAULT_SIZE, 103, Short.MAX_VALUE)))
+						.addComponent(chatScrollPane, GroupLayout.DEFAULT_SIZE, 443, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_mainViewPanel.setVerticalGroup(
 			gl_mainViewPanel.createParallelGroup(Alignment.TRAILING)
-				.addGroup(gl_mainViewPanel.createSequentialGroup()
+				.addGroup(Alignment.LEADING, gl_mainViewPanel.createSequentialGroup()
 					.addContainerGap()
-					.addGroup(gl_mainViewPanel.createParallelGroup(Alignment.TRAILING)
-						.addComponent(usersList, GroupLayout.DEFAULT_SIZE, 490, Short.MAX_VALUE)
+					.addGroup(gl_mainViewPanel.createParallelGroup(Alignment.LEADING)
+						.addComponent(scrollPane_2, GroupLayout.DEFAULT_SIZE, 490, Short.MAX_VALUE)
 						.addGroup(gl_mainViewPanel.createSequentialGroup()
-							.addComponent(chatBox, GroupLayout.PREFERRED_SIZE, 412, GroupLayout.PREFERRED_SIZE)
-							.addPreferredGap(ComponentPlacement.UNRELATED)
-							.addGroup(gl_mainViewPanel.createParallelGroup(Alignment.LEADING)
-								.addComponent(sendButton, GroupLayout.DEFAULT_SIZE, 67, Short.MAX_VALUE)
-								.addComponent(messageBox, GroupLayout.DEFAULT_SIZE, 67, Short.MAX_VALUE))))
+							.addComponent(chatScrollPane, GroupLayout.PREFERRED_SIZE, 417, GroupLayout.PREFERRED_SIZE)
+							.addPreferredGap(ComponentPlacement.RELATED)
+							.addGroup(gl_mainViewPanel.createParallelGroup(Alignment.TRAILING)
+								.addGroup(gl_mainViewPanel.createSequentialGroup()
+									.addComponent(sendButton, GroupLayout.PREFERRED_SIZE, 39, GroupLayout.PREFERRED_SIZE)
+									.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+									.addComponent(getLogFilebtn))
+								.addComponent(scrollPane_1, GroupLayout.PREFERRED_SIZE, 68, GroupLayout.PREFERRED_SIZE))))
 					.addContainerGap())
 		);
+		scrollPane_2.setViewportView(usersList);
+		scrollPane_1.setViewportView(messageBox);
+		messageBox.setLineWrap(true);
+		chatScrollPane.setViewportView(chatBox);
+		chatBox.setLineWrap(true);
 		
 		setLayout(gl_mainViewPanel);
 	}
-
 }

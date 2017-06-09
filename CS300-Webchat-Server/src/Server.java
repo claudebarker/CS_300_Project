@@ -1,6 +1,9 @@
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -8,83 +11,85 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 public class Server implements Runnable {
-	private Socket clientSocket;
-	private PrintWriter output;
-	private BufferedReader input;
-	private OnlineHandler onlineHandler;
-	private RequestHandler requestHandler = new RequestHandler();
-	private String username;
+	public Socket clientSocket;
+	public ObjectOutputStream output;
+	public ObjectInputStream input;
+	
+	public OnlineHandler onlineHandler;
+	public OnlineNode onlineNode = null;
+	
+	public ServerConnectionHandler serverConnectionHandler;
+	
+	public RequestHandler requestHandler = new RequestHandler();
+	
+	public String username;
+	
+	public Thread serverRequestThread;
+	
+	public boolean sendingLogFile = false;
+	
+	private int updateInterval = 2000; // 5 sec
 	
 	public boolean loggedIn = false;
 	
-	public Server(OnlineHandler onlineHandler, Socket clientSocket) throws UnknownHostException, IOException{
+	public Server(OnlineHandler onlineHandler, Socket clientSocket, ServerConnectionHandler serverConnectionHandler) throws UnknownHostException, IOException{
 
 		this.onlineHandler = onlineHandler;
 		this.clientSocket = clientSocket;
+		this.serverConnectionHandler = serverConnectionHandler;
 		
-		output = new PrintWriter(clientSocket.getOutputStream(), true);
-		input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-		
+		output = new ObjectOutputStream(clientSocket.getOutputStream());
+		input = new ObjectInputStream(clientSocket.getInputStream());
+
+		// Create a new thread to handle the requests from the client
+		serverRequestThread = new Thread(new ServerRequestThread(this));
+		serverRequestThread.start();
 	}
 	
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
-
-		String inputLine, outputLine;
-		
-		outputLine = "Connection recieved!";
-		output.println(outputLine);
-		
-		// Weather of not the user client has logged in
-		boolean loggedIn = false;
-		
-		try {
-			while(null != (inputLine = input.readLine())){
-				
-				// Skip empty input
-				if(inputLine.equals("")){
-					continue;
-				}
-				
-				System.out.println("Message from client: " + inputLine);
-				
-				InetAddress url = clientSocket.getInetAddress(); // Get the URL from the client
-				String requestCode = inputLine.substring(0, 1);  // Request code is the first character in the input			
-				String data = inputLine.substring(1);            // Data is everything after the request code
-
-				// Pass the onlineList to the request handler
-				requestHandler.setOnlineList(onlineHandler.onlineList);
-
-				// Add the request to the request handler
-				System.out.println("Creating request...");
-				requestHandler.createNewRequest(url, requestCode, data);
-
-				System.out.println("Processing request...");
-				String result = requestHandler.processNextRequest();
-
-				System.out.println("result: " + result);
-				output.println(result);
-				
-				if(!loggedIn){
-					loggedIn = requestHandler.checkLoggedIn();
-					
-					if(loggedIn){
-						username = requestHandler.getClientUsername();
-						onlineHandler.onlineList.add(new OnlineNode(url, username, output));
-					}
-				}
-				
-				System.out.println();
+		while(true){
+			
+			// Wait for a period of time before updating the client users lists
+			
+			try {
+				Thread.sleep(updateInterval);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			System.out.println("User " + username + " has disconnected.");
+			
+			updateClientUsersList();
+			
+			serverConnectionHandler.updateConsoleLog();
+			
+			// If the user has disconnected, the serverRequestThread will not be alive
+			if(!serverRequestThread.isAlive()){
+				break;
+			}
+		}
+
+		// Remove the online node for this client
+		onlineHandler.onlineList.remove(onlineNode);
+		
+		// If we have exited the while loop, the kill this thread by returning.
+		return;
+	}
+	
+	private void updateClientUsersList(){
+		String list = "ALL USERS;";
+		for(OnlineNode node : onlineHandler.onlineList){
+			if(node != null)
+				list = list + node.getUsername() + ";";
 		}
 		
-		System.out.println("Done reading input from client " + username);
-		
-		return;
+		String outputString = "USERS LIST:" + list;
+		try {
+			output.writeObject(outputString);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			System.err.println("IO Error updating client list! Client might have disconnected.");
+		}
 	}
 
 }

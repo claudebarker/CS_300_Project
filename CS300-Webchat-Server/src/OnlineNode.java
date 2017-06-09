@@ -1,3 +1,4 @@
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -5,14 +6,14 @@ import java.net.UnknownHostException;
 public class OnlineNode {
 	private InetAddress ip;
 	private String username;
-	private PrintWriter output;  // The buffered output for this client
+	private ObjectOutputStream output;  // The buffered output for this client
 	
 	public OnlineNode(Boolean test){
 		if(test)
 			generateTestData();
 	}
 	
-	public OnlineNode(InetAddress ip, String username, PrintWriter output){
+	public OnlineNode(InetAddress ip, String username, ObjectOutputStream output){
 		this.ip = ip;
 		this.username = username;
 		this.output = output;
@@ -34,11 +35,11 @@ public class OnlineNode {
 		this.username = username;
 	}
 
-	public PrintWriter getOutput() {
+	public ObjectOutputStream getOutput() {
 		return output;
 	}
 
-	public void setOutput(PrintWriter output) {
+	public void setOutput(ObjectOutputStream output) {
 		this.output = output;
 	}
 	

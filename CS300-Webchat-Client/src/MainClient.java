@@ -8,7 +8,12 @@ import javax.swing.Action;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+
 import java.awt.event.ActionListener;
+import java.awt.event.InputMethodEvent;
+import java.awt.event.InputMethodListener;
 import java.awt.event.ActionEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,6 +21,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.text.DateFormat;
+import java.util.Date;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import javax.swing.JPanel;
@@ -34,10 +41,12 @@ public class MainClient {
 	public String currentChat = "ALL USERS";
 	public String requestToSend = null;
 	
+	PanelHandler panelHandler;
+	
 	MainPanel mainPanel;
 	LoginPanel loginPanel;
 	SignupPanel signupPanel;
-	
+	ConnectToServerPanel connectToServerPanel;
 
 	public static void main(String[] args) {
 		
@@ -54,17 +63,10 @@ public class MainClient {
 		
 	}
 
-
-	/**
-	 * Create the application.
-	 * @throws IOException 
-	 * @throws UnknownHostException 
-	 */
-	public MainClient() throws UnknownHostException, IOException {
+	public MainClient() {
 		initialize();
 		
-		client = new Client(this);
-		new Thread(client).start();
+		panelHandler = new PanelHandler(this);
 	}
 
 	/**
@@ -79,10 +81,24 @@ public class MainClient {
 		mainPanel = new MainPanel();
 		loginPanel = new LoginPanel();
 		signupPanel = new SignupPanel();
+		connectToServerPanel = new ConnectToServerPanel();
 		
-		frmJavaChatApp.add(loginPanel);
+		frmJavaChatApp.add(connectToServerPanel);
 
+		// *****************
+		// ConnectToServerPanel
+		// *****************
+		
+		connectToServerPanel.connectButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				tryConnectingToServer(connectToServerPanel.serverIPField.getText(), connectToServerPanel.portField.getText());
+			}
+		});
+
+		// *****************
 		// Login panel
+		// *****************
+		
 		loginPanel.loginButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				sendLoginRequest(loginPanel.usernameField.getText(), loginPanel.passwordField.getText());
@@ -92,18 +108,15 @@ public class MainClient {
 		// New user button
 		loginPanel.newUserButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				loginPanel.setVisible(false);
-				signupPanel.setVisible(true);
-				mainPanel.setVisible(false);
-				frmJavaChatApp.remove(loginPanel);
-				frmJavaChatApp.add(signupPanel);
-				frmJavaChatApp.remove(mainPanel);
-				frmJavaChatApp.pack();
+				panelHandler.changeToSignupPanel();
 			}
 		});
 		
-		
+
+		// *****************
 		// Singup panel		
+		// *****************
+		
 		// Sign Up button
 		signupPanel.signupButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -120,18 +133,13 @@ public class MainClient {
 		// Return button
 		signupPanel.returnButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				loginPanel.setVisible(true);
-				signupPanel.setVisible(false);
-				mainPanel.setVisible(false);
-				frmJavaChatApp.add(loginPanel);
-				frmJavaChatApp.remove(signupPanel);
-				frmJavaChatApp.remove(mainPanel);
-				frmJavaChatApp.pack();
+				panelHandler.changeToLoginPanel();
 			}
 		});
 		
-		
+		// *****************
 		// Main panel
+		// *****************
 		mainPanel.sendButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				sendCurrentMessage(mainPanel.messageBox.getText());
@@ -150,7 +158,37 @@ public class MainClient {
 			}
 		});
 		
+		// Get log file
+		mainPanel.getLogFilebtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				getLogFile();
+			}
+		});
 		
+		// Change chat recipient
+		mainPanel.usersList.addListSelectionListener(new ListSelectionListener() {
+			public void valueChanged(ListSelectionEvent arg0) {
+				currentChat = (String)mainPanel.usersList.getSelectedValue();
+				System.out.println("Changing currentChat to " + currentChat);
+			}
+		});
+		
+	}
+	
+	private void tryConnectingToServer(String ipField, String portField){
+		hostName = ipField;
+		port = Integer.parseInt(portField);
+		
+		try {
+			client = new Client(this);
+			new Thread(client).start();
+			
+			panelHandler.changeToLoginPanel();
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private void sendSignupRequest(String usernameField, String passwordField){
@@ -167,16 +205,27 @@ public class MainClient {
 		}
 	}
 
-	private void sendCurrentMessage(String messageText){		
+	private void sendCurrentMessage(String messageText){
 		if(!messageText.equals("")){
 			requestToSend = "3" + username + ";" + currentChat + ";" + getTimestamp() + ";" + messageText;
 			client.sendRequest(requestToSend);
 			
 			mainPanel.messageBox.setText("");
+			
+			// If we are not in the ALL USERS chat, we need to append the message we send to the chat window
+			if(!currentChat.equals("ALL USERS")){
+				String messageForWindow = username + " -> " + currentChat + " : " + getTimestamp() + ": " + messageText;
+				client.appendMessageToChatWindow(messageForWindow);
+			}
 		}
 	}
 	
+	private void getLogFile(){
+		requestToSend = "4" + username + ";" + currentChat;
+		client.sendRequest(requestToSend);
+	}
+	
 	private String getTimestamp(){
-		return "" + System.currentTimeMillis();
+		return "" + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date());
 	}
 }
